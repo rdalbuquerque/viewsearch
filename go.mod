@@ -1,4 +1,4 @@
-module viewsearch
+module github.com/rdalbuquerque/viewsearch
 
 go 1.21.4
 

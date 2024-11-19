@@ -3,7 +3,7 @@ package viewsearch
 import "testing"
 
 func TestIncrementDecrementSearchIndex(t *testing.T) {
-	model := New(0, 0)
+	model := New()
 	model.searchResults = []searchResult{
 		{
 			Line:  1,
@@ -34,7 +34,7 @@ func TestIncrementDecrementSearchIndex(t *testing.T) {
 }
 
 func TestDecrementIncrementSearchIndex(t *testing.T) {
-	model := New(0, 0)
+	model := New()
 	model.searchResults = []searchResult{
 		{
 			Line:  1,
@@ -65,7 +65,7 @@ func TestDecrementIncrementSearchIndex(t *testing.T) {
 }
 
 func TestFindAndHighlightMatches(t *testing.T) {
-	model := New(0, 0)
+	model := New()
 	model.SetContent(`
 # Today’s Menu
 
@@ -135,5 +135,29 @@ Bon appétit!
 		if searchres.Line != expectedsearchres.Line {
 			t.Errorf("expected index %d search result to be on line %d but was on %d", i, expectedsearchres.Line, searchres.Line)
 		}
+	}
+}
+
+func TestHeights(t *testing.T) {
+	model := New()
+	// New initializes a model with showHelp = true and searchMode = false, so it's expected viewport height to be overall height -1
+	model.SetDimensions(10, 10)
+	if model.Viewport.Height != 9 {
+		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height)
+	}
+	// set showHelp to false, now viewport height should be equals to overall height
+	model.SetShowHelp(false)
+	if model.Viewport.Height != 10 {
+		t.Errorf("expected viewport height to be %d, but was %d", 10, model.Viewport.Height)
+	}
+	// set searchMode to true, viewport height should be overall height -1 again
+	model.setShowSearch(true)
+	if model.Viewport.Height != 9 {
+		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height)
+	}
+	// searchMode is true and showHelp is true, viewportheight should now be overall height -2
+	model.SetShowHelp(true)
+	if model.Viewport.Height != 8 {
+		t.Errorf("expected viewport height to be %d, but was %d", 8, model.Viewport.Height)
 	}
 }

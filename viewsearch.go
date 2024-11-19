@@ -28,6 +28,9 @@ type Model struct {
 	currentResultIndex int
 	navigationMode     bool
 	helpBindings       []key.Binding
+	showHelp           bool
+	height             int
+	width              int
 }
 
 var (
@@ -38,22 +41,24 @@ var (
 	noResultsStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // e.g., red
 )
 
-func New(width, height int) Model {
+func New() Model {
 	bindings := []key.Binding{
 		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "find")),
 		key.NewBinding(key.WithKeys("enter"), key.WithHelp("↵", "navigate results")),
 		key.NewBinding(key.WithKeys("backspace"), key.WithHelp("bckspace", "exit find")),
 		key.NewBinding(key.WithKeys("n", "N"), key.WithHelp("n/N", "forward/backward")),
 	}
-	vp := viewport.New(width, height)
+	vp := viewport.New(0, 0)
 	ta := textarea.New()
 	ta.ShowLineNumbers = false
 	ta.Prompt = "/"
-	return Model{
+	m := Model{
 		Viewport:     vp,
 		ta:           ta,
 		helpBindings: bindings,
 	}
+	m.SetShowHelp(true)
+	return m
 }
 
 func (m *Model) setTextAreaWidth(viewportWidth int) {
@@ -65,10 +70,11 @@ func (m *Model) setTextAreaWidth(viewportWidth int) {
 }
 
 func (m *Model) SetDimensions(width, height int) {
-	m.Viewport.Height = height
+	m.height = height
+	m.width = width
 	m.Viewport.Width = width
-	m.ta.SetHeight(1)
 	m.setTextAreaWidth(width)
+	m.setHeights()
 }
 
 func (m *Model) GotoBottom() {
@@ -161,13 +167,18 @@ func (m *Model) handleSearchActivation(msg tea.Msg) tea.Cmd {
 		return m.updateTextArea(msg)
 	}
 	if !m.searchMode {
-		m.searchMode = true
-		m.ta.SetHeight(1)
-		m.Viewport.Height--
-		m.ta.Focus()
+		m.setShowSearch(true)
 		return nil
 	}
 	return nil
+}
+
+func (m *Model) setShowSearch(v bool) {
+	m.searchMode = v
+	if v {
+		m.ta.Focus()
+	}
+	m.setHeights()
 }
 
 func (m *Model) handleDeactivations() tea.Cmd {
@@ -177,12 +188,27 @@ func (m *Model) handleDeactivations() tea.Cmd {
 		return nil
 	}
 	if m.searchMode {
-		m.searchMode = false
-		m.ta.SetHeight(0)
-		m.Viewport.Height++
+		m.setShowSearch(false)
 		return nil
 	}
 	return nil
+}
+
+func (m *Model) SetShowHelp(v bool) {
+	m.showHelp = v
+	m.setHeights()
+}
+
+func (m *Model) setHeights() {
+	viewportHeight := m.height
+	if m.showHelp {
+		viewportHeight -= 1
+	}
+	if m.searchMode {
+		m.ta.SetHeight(1)
+		viewportHeight -= 1
+	}
+	m.Viewport.Height = viewportHeight
 }
 
 func (m *Model) View() string {
@@ -200,7 +226,10 @@ func (m *Model) View() string {
 	if m.searchMode {
 		return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, taView, searchCounter), renderedViewPort)
 	}
-	return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.helpBindings))
+	if m.showHelp {
+		return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.helpBindings))
+	}
+	return renderedViewPort
 }
 
 func (m *Model) highlightMatches() {

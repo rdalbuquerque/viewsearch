@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,6 +27,7 @@ type Model struct {
 	originalContent    string
 	currentResultIndex int
 	navigationMode     bool
+	helpBindings       []key.Binding
 }
 
 var (
@@ -36,13 +39,20 @@ var (
 )
 
 func New(width, height int) Model {
+	bindings := []key.Binding{
+		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "find")),
+		key.NewBinding(key.WithKeys("enter"), key.WithHelp("↵", "navigate results")),
+		key.NewBinding(key.WithKeys("backspace"), key.WithHelp("bckspace", "exit find")),
+		key.NewBinding(key.WithKeys("n", "N"), key.WithHelp("n/N", "forward/backward")),
+	}
 	vp := viewport.New(width, height)
 	ta := textarea.New()
 	ta.ShowLineNumbers = false
 	ta.Prompt = "/"
 	return Model{
-		Viewport: vp,
-		ta:       ta,
+		Viewport:     vp,
+		ta:           ta,
+		helpBindings: bindings,
 	}
 }
 
@@ -96,17 +106,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		default:
 		}
 	}
+	var tacmd tea.Cmd
 	if m.searchMode {
-		tacmd := m.updateTextArea(msg)
+		tacmd = m.updateTextArea(msg)
 		if m.searchMode {
 			m.Viewport.SetContent(m.originalContent)
 			m.highlightMatches()
 			return m, tacmd
 		}
-		vpcmd := m.updateViewPort(msg)
-		return m, tea.Batch(vpcmd, tacmd)
 	}
-	return m, nil
+	vpcmd := m.updateViewPort(msg)
+	return m, tea.Batch(vpcmd, tacmd)
 }
 
 func (m *Model) updateTextArea(msg tea.Msg) tea.Cmd {
@@ -190,7 +200,7 @@ func (m *Model) View() string {
 	if m.searchMode {
 		return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, taView, searchCounter), renderedViewPort)
 	}
-	return renderedViewPort
+	return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.helpBindings))
 }
 
 func (m *Model) highlightMatches() {

@@ -109,7 +109,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			return m, m.handleNavigationForward(msg)
 		case "N":
 			return m, m.handleNavigationBackwards(msg)
-		default:
 		}
 	}
 	var tacmd tea.Cmd
@@ -118,7 +117,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		if m.searchMode {
 			m.Viewport.SetContent(m.originalContent)
 			m.highlightMatches()
-			return m, tacmd
 		}
 	}
 	vpcmd := m.updateViewPort(msg)

@@ -221,13 +221,14 @@ func (m *Model) View() string {
 		taView = blurredStyle.Render(m.ta.View())
 	}
 	renderedViewPort := m.Viewport.View()
+	viewsearchView := renderedViewPort
 	if m.searchMode {
-		return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, taView, searchCounter), renderedViewPort)
+		viewsearchView = lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, taView, searchCounter), viewsearchView)
 	}
 	if m.showHelp {
-		return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.HelpBindings))
+		viewsearchView = lipgloss.JoinVertical(lipgloss.Top, viewsearchView, help.New().ShortHelpView(m.HelpBindings))
 	}
-	return renderedViewPort
+	return viewsearchView
 }
 
 func (m *Model) highlightMatches() {

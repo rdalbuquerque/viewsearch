@@ -27,7 +27,7 @@ type Model struct {
 	originalContent    string
 	currentResultIndex int
 	navigationMode     bool
-	helpBindings       []key.Binding
+	HelpBindings       []key.Binding
 	showHelp           bool
 	height             int
 	width              int
@@ -55,7 +55,7 @@ func New() Model {
 	m := Model{
 		Viewport:     vp,
 		ta:           ta,
-		helpBindings: bindings,
+		HelpBindings: bindings,
 	}
 	m.SetShowHelp(true)
 	return m
@@ -225,7 +225,7 @@ func (m *Model) View() string {
 		return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, taView, searchCounter), renderedViewPort)
 	}
 	if m.showHelp {
-		return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.helpBindings))
+		return lipgloss.JoinVertical(lipgloss.Top, renderedViewPort, help.New().ShortHelpView(m.HelpBindings))
 	}
 	return renderedViewPort
 }

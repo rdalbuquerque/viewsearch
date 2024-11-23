@@ -71,7 +71,7 @@ func TestFindAndHighlightMatches(t *testing.T) {
 
 ## Appetizers
 
-| Name        | Price | Notes                           |
+| Name        | Price | Notes Prices                    |
 | ---         | ---   | ---                             |
 | Tsukemono   | $2    | Just an appetizer               |
 | Tomato Soup | $4    | Made with San Marzano tomatoes  |
@@ -106,8 +106,8 @@ Some famous people that have eaten here lately:
 Bon appétit!
 `)
 	model.findAndHighlightMatches("price")
-	expectedResultsLen := 3
-	if len(model.searchResults) != 3 {
+	expectedResultsLen := 4
+	if len(model.searchResults) != expectedResultsLen {
 		t.Errorf("expected %d length but got %d", expectedResultsLen, len(model.searchResults))
 	}
 
@@ -115,6 +115,10 @@ Bon appétit!
 		{
 			Line:  5,
 			Index: 16,
+		},
+		{
+			Line:  5,
+			Index: 30,
 		},
 		{
 			Line:  14,

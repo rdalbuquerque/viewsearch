@@ -20,26 +20,32 @@ type searchResult struct {
 }
 
 type Model struct {
-	Viewport           viewport.Model
-	searchResults      []searchResult
-	searchMode         bool
-	ta                 textarea.Model
-	originalContent    string
-	currentResultIndex int
-	navigationMode     bool
-	HelpBindings       []key.Binding
-	showHelp           bool
-	height             int
-	width              int
+	SelectedResultStyle lipgloss.Style
+	ResultStyle         lipgloss.Style
+	Viewport            viewport.Model
+	searchResults       []searchResult
+	searchMode          bool
+	ta                  textarea.Model
+	originalContent     string
+	currentResultIndex  int
+	navigationMode      bool
+	HelpBindings        []key.Binding
+	showHelp            bool
+	height              int
+	width               int
 }
 
 var (
-	currentHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("#00FF00"))
-	highlightStyle        = lipgloss.NewStyle().Background(lipgloss.Color("#FF00FF"))
-	focusedStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))     // e.g., bright color
-	blurredStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))     // e.g., grayed out
-	noResultsStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // e.g., red
+	focusedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))     // e.g., bright color
+	blurredStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))     // e.g., grayed out
+	noResultsStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // e.g., red
 )
+
+func defaultStyles() (lipgloss.Style, lipgloss.Style) {
+	selectedResultStyle := lipgloss.NewStyle().Background(lipgloss.Color("#00FF00"))
+	resultStyle := lipgloss.NewStyle().Background(lipgloss.Color("#FF00FF"))
+	return selectedResultStyle, resultStyle
+}
 
 func New() Model {
 	bindings := []key.Binding{
@@ -52,10 +58,15 @@ func New() Model {
 	ta := textarea.New()
 	ta.ShowLineNumbers = false
 	ta.Prompt = "/"
+
+	selectedResultStyle, resultStyle := defaultStyles()
+
 	m := Model{
-		Viewport:     vp,
-		ta:           ta,
-		HelpBindings: bindings,
+		SelectedResultStyle: selectedResultStyle,
+		ResultStyle:         resultStyle,
+		Viewport:            vp,
+		ta:                  ta,
+		HelpBindings:        bindings,
 	}
 	m.SetShowHelp(true)
 	return m
@@ -289,10 +300,10 @@ func (m *Model) storeSearchResult(line, index int) {
 func (m *Model) setHighlightStyle(lineIndex, index int) lipgloss.Style {
 	if m.currentResultIndex >= 0 && m.currentResultIndex < len(m.searchResults) {
 		if lineIndex == m.searchResults[m.currentResultIndex].Line && index == m.searchResults[m.currentResultIndex].Index {
-			return currentHighlightStyle
+			return m.SelectedResultStyle
 		}
 	}
-	return highlightStyle
+	return m.ResultStyle
 }
 
 func (m *Model) navigateToNextResult() {

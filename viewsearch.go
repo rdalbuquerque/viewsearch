@@ -36,9 +36,10 @@ type Model struct {
 }
 
 var (
-	focusedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#cd00cd")) // bright color
-	blurredStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#585858")) // grayed out
 	noResultsStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // red
+
+	searchPromptStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#cd00cd")) // bright magenta
+	navigationPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#585858")) // gray
 )
 
 func defaultStyles() (lipgloss.Style, lipgloss.Style) {
@@ -72,12 +73,14 @@ func New() Model {
 	return m
 }
 
+const searchCounterReservedWidth = 10
+
 func (m *Model) setTextAreaWidth(viewportWidth int) {
-	if viewportWidth < 80 && viewportWidth > 4 {
-		m.ta.SetWidth(viewportWidth - 4)
-	} else {
-		m.ta.SetWidth(80)
+	taWidth := min(80, viewportWidth-searchCounterReservedWidth)
+	if taWidth < 1 {
+		taWidth = 1
 	}
+	m.ta.SetWidth(taWidth)
 }
 
 func (m *Model) SetDimensions(width, height int) {
@@ -123,7 +126,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 	}
 	var tacmd tea.Cmd
-	if m.searchMode {
+	if m.searchMode && !m.navigationMode {
 		tacmd = m.updateTextArea(msg)
 		if m.searchMode {
 			m.Viewport.SetContent(m.originalContent)
@@ -164,8 +167,8 @@ func (m *Model) handleNavigationBackwards(msg tea.Msg) tea.Cmd {
 
 func (m *Model) handleNavigationActivation() tea.Cmd {
 	if m.searchMode {
-		m.ta.Blur()
 		m.navigationMode = true
+		m.updatePromptStyle()
 		return nil
 	}
 	return nil
@@ -186,21 +189,38 @@ func (m *Model) setShowSearch(v bool) {
 	m.searchMode = v
 	if v {
 		m.ta.Focus()
+		m.updatePromptStyle()
 	}
 	m.setHeights()
+}
+
+func (m *Model) updatePromptStyle() {
+	s := m.ta.Styles()
+	if m.navigationMode {
+		s.Focused.Prompt = navigationPromptStyle
+	} else {
+		s.Focused.Prompt = searchPromptStyle
+	}
+	m.ta.SetStyles(s)
 }
 
 func (m *Model) handleDeactivations() tea.Cmd {
 	if m.navigationMode {
 		m.navigationMode = false
+		m.updatePromptStyle()
 		m.ta.Focus()
 		return nil
 	}
 	if m.searchMode {
 		m.setShowSearch(false)
+		m.Viewport.SetXOffset(0)
 		return nil
 	}
 	return nil
+}
+
+func (m *Model) SearchActive() bool {
+	return m.searchMode
 }
 
 func (m *Model) SetShowHelp(v bool) {
@@ -225,12 +245,7 @@ func (m *Model) View() string {
 	if !m.hasSearchResults() {
 		searchCounter = noResultsStyle.Render(" 0!")
 	}
-	var taView string
-	if m.ta.Focused() {
-		taView = focusedStyle.Render(m.ta.View())
-	} else {
-		taView = blurredStyle.Render(m.ta.View())
-	}
+	taView := m.ta.View()
 	renderedViewPort := m.Viewport.View()
 	viewsearchView := renderedViewPort
 	if m.searchMode {
@@ -342,6 +357,35 @@ func (m *Model) decrementSearchIndex() {
 func (m *Model) scrollToCurrentResult() {
 	nextResult := m.searchResults[m.currentResultIndex]
 	m.scrollViewportToLine(nextResult.Line)
+	searchQuery := m.ta.Value()
+	m.scrollViewportToColumn(nextResult.Line, nextResult.Index, len(searchQuery))
+}
+
+func (m *Model) scrollViewportToColumn(lineIndex, byteIndex, matchLen int) {
+	lines := strings.Split(m.originalContent, "\n")
+	if lineIndex < 0 || lineIndex >= len(lines) {
+		return
+	}
+	line := lines[lineIndex]
+	if byteIndex > len(line) {
+		byteIndex = len(line)
+	}
+	matchEnd := min(byteIndex+matchLen, len(line))
+
+	// Convert byte offsets to display columns
+	colStart := lipgloss.Width(line[:byteIndex])
+	colEnd := lipgloss.Width(line[:matchEnd])
+
+	leftEdge := m.Viewport.XOffset()
+	rightEdge := leftEdge + m.Viewport.Width()
+
+	// Ensure the full match is visible
+	if colEnd > rightEdge {
+		m.Viewport.SetXOffset(colEnd - m.Viewport.Width())
+	}
+	if colStart < m.Viewport.XOffset() {
+		m.Viewport.SetXOffset(colStart)
+	}
 }
 
 func (m *Model) scrollViewportToLine(line int) {

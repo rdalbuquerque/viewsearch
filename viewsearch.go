@@ -52,7 +52,7 @@ func New() Model {
 	bindings := []key.Binding{
 		key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "find")),
 		key.NewBinding(key.WithKeys("enter"), key.WithHelp("↵", "navigate results")),
-		key.NewBinding(key.WithKeys("backspace"), key.WithHelp("bckspace", "exit find")),
+		key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit find")),
 		key.NewBinding(key.WithKeys("n", "N"), key.WithHelp("n/N", "forward/backward")),
 	}
 	vp := viewport.New()
@@ -107,6 +107,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
+		case "esc":
+			if m.searchMode {
+				m.ExitSearch()
+				return m, nil
+			}
 		case "/", "alt+/", "alt+ctrl+_":
 			if m.navigationMode {
 				m.handleDeactivations()
@@ -202,6 +207,16 @@ func (m *Model) updatePromptStyle() {
 		s.Focused.Prompt = searchPromptStyle
 	}
 	m.ta.SetStyles(s)
+}
+
+func (m *Model) ExitSearch() {
+	m.navigationMode = false
+	m.searchResults = nil
+	m.currentResultIndex = 0
+	m.ta.Reset()
+	m.setShowSearch(false)
+	m.Viewport.SetContent(m.originalContent)
+	m.Viewport.SetXOffset(0)
 }
 
 func (m *Model) handleDeactivations() tea.Cmd {

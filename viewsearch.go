@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type LogMsg string
@@ -36,9 +36,9 @@ type Model struct {
 }
 
 var (
-	focusedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))     // e.g., bright color
-	blurredStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))     // e.g., grayed out
-	noResultsStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // e.g., red
+	focusedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#cd00cd")) // bright color
+	blurredStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#585858")) // grayed out
+	noResultsStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#b22222")) // red
 )
 
 func defaultStyles() (lipgloss.Style, lipgloss.Style) {
@@ -54,7 +54,7 @@ func New() Model {
 		key.NewBinding(key.WithKeys("backspace"), key.WithHelp("bckspace", "exit find")),
 		key.NewBinding(key.WithKeys("n", "N"), key.WithHelp("n/N", "forward/backward")),
 	}
-	vp := viewport.New(0, 0)
+	vp := viewport.New()
 	ta := textarea.New()
 	ta.ShowLineNumbers = false
 	ta.Prompt = "/"
@@ -83,7 +83,7 @@ func (m *Model) setTextAreaWidth(viewportWidth int) {
 func (m *Model) SetDimensions(width, height int) {
 	m.height = height
 	m.width = width
-	m.Viewport.Width = width
+	m.Viewport.SetWidth(width)
 	m.setTextAreaWidth(width)
 	m.setHeights()
 }
@@ -102,7 +102,7 @@ func (m *Model) SetContent(content string) {
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "/", "alt+/", "alt+ctrl+_":
 			if m.navigationMode {
@@ -217,7 +217,7 @@ func (m *Model) setHeights() {
 		m.ta.SetHeight(1)
 		viewportHeight -= 1
 	}
-	m.Viewport.Height = viewportHeight
+	m.Viewport.SetHeight(viewportHeight)
 }
 
 func (m *Model) View() string {
@@ -346,17 +346,17 @@ func (m *Model) scrollToCurrentResult() {
 
 func (m *Model) scrollViewportToLine(line int) {
 	// Check if the resultLine is currently visible
-	topLine := m.Viewport.YOffset
-	bottomLine := topLine + m.Viewport.Height - 1 // -1 because it's zero-based index
+	topLine := m.Viewport.YOffset()
+	bottomLine := topLine + m.Viewport.Height() - 1 // -1 because it's zero-based index
 	for line < topLine || line > bottomLine {
 		if line < topLine {
-			m.Viewport.ViewUp()
+			m.Viewport.ScrollUp(m.Viewport.Height())
 		} else {
-			m.Viewport.ViewDown()
+			m.Viewport.ScrollDown(m.Viewport.Height())
 		}
 
 		// Update topLine and bottomLine after scrolling
-		topLine = m.Viewport.YOffset
-		bottomLine = topLine + m.Viewport.Height - 1
+		topLine = m.Viewport.YOffset()
+		bottomLine = topLine + m.Viewport.Height() - 1
 	}
 }

@@ -146,22 +146,22 @@ func TestHeights(t *testing.T) {
 	model := New()
 	// New initializes a model with showHelp = true and searchMode = false, so it's expected viewport height to be overall height -1
 	model.SetDimensions(10, 10)
-	if model.Viewport.Height != 9 {
-		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height)
+	if model.Viewport.Height() != 9 {
+		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height())
 	}
 	// set showHelp to false, now viewport height should be equals to overall height
 	model.SetShowHelp(false)
-	if model.Viewport.Height != 10 {
-		t.Errorf("expected viewport height to be %d, but was %d", 10, model.Viewport.Height)
+	if model.Viewport.Height() != 10 {
+		t.Errorf("expected viewport height to be %d, but was %d", 10, model.Viewport.Height())
 	}
 	// set searchMode to true, viewport height should be overall height -1 again
 	model.setShowSearch(true)
-	if model.Viewport.Height != 9 {
-		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height)
+	if model.Viewport.Height() != 9 {
+		t.Errorf("expected viewport height to be %d, but was %d", 9, model.Viewport.Height())
 	}
 	// searchMode is true and showHelp is true, viewportheight should now be overall height -2
 	model.SetShowHelp(true)
-	if model.Viewport.Height != 8 {
-		t.Errorf("expected viewport height to be %d, but was %d", 8, model.Viewport.Height)
+	if model.Viewport.Height() != 8 {
+		t.Errorf("expected viewport height to be %d, but was %d", 8, model.Viewport.Height())
 	}
 }
